@@ -5,18 +5,18 @@ import org.junit.Test;
 import org.voltdb.client.ClientResponseWithPartitionKey;
 
 import mock.MockClient;
-import utils.RetryScatterCall;
-import utils.RetryScatterCall.RetryScatterCallback;
+import client.utils.RetryScatterCall;
+import client.utils.RetryScatterCall.RetryScatterCallback;
 
 public class RetryScatterCallTest {
 
-	final int MAX_RETRY = 3;
-	
 	@Before
 	public void setUp() throws Exception {
 		
 	}
 
+	final int MAX_RETRY = 3;
+	
 	@Test
 	public void testInvokeEqual() {
 		MockClient client = new MockClient();
@@ -32,7 +32,8 @@ public class RetryScatterCallTest {
 			}
 			
 		};
-		call.invoke(callback, "", null);
+		Object[] args = {null};
+		call.invoke(callback, "", args);
 	}
 	
 	@Test
@@ -50,7 +51,8 @@ public class RetryScatterCallTest {
 			}
 			
 		};
-		call.invoke(callback, "", null);
+		Object[] args = {null};
+		call.invoke(callback, "", args);
 	}
 	
 	@Test
@@ -68,6 +70,7 @@ public class RetryScatterCallTest {
 			}
 			
 		};
-		call.invoke(callback, "", null);
+		Object[] args = {null};
+		call.invoke(callback, "", args);
 	}
 }

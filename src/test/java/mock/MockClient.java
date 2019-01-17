@@ -19,8 +19,8 @@ import org.voltdb.client.VoltBulkLoader.BulkLoaderFailureCallBack;
 import org.voltdb.client.VoltBulkLoader.BulkLoaderSuccessCallback;
 import org.voltdb.client.VoltBulkLoader.VoltBulkLoader;
 
-import utils.RetryScatterCall.InternalRetryScatterCallback;
-import utils.RetryScatterCall.RetryScatterCallback;
+import client.utils.RetryScatterCall.InternalRetryScatterCallback;
+import client.utils.RetryScatterCall.RetryScatterCallback;
 
 public class MockClient implements Client {
 	
