@@ -5,16 +5,17 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
+import org.voltdb.VoltTable;
+import org.voltdb.VoltType;
 import org.voltdb.client.Client;
 import org.voltdb.client.ClientFactory;
 import org.voltdb.client.ClientResponseWithPartitionKey;
-import org.voltdb.client.NoConnectionsException;
 import org.voltdb.client.ProcCallException;
 
 import client.utils.AllPartitionParallelClient;
 import client.utils.RetryScatterCall;
 import client.utils.RetryScatterCall.RetryScatterCallback;
-import client.utils.SinglePartSynchronousPaginatedClient;
+import client.utils.SynchronousIterativeClient;
 
 public class Application {
 
@@ -23,18 +24,65 @@ public class Application {
 	public static void main(String[] args) 
 			throws ProcCallException, InterruptedException, ExecutionException, UnknownHostException, IOException {
 		client = ClientFactory.createClient();
+		client.createConnection("localhost");
 
 		//			runRetryProc();
-		//			preloadData();
+//					preloadData();
 		//			runRepetitivePart();
 		//			runRepetitiveDelete();
-		runRepetitiveSelect();
+//		runRepetitiveSelect();
+		runPartitionedKeysetPaginatedSelect();
+//		runOnePartitionedKeysetPaginatedSelect();
+//		runPartitionedKeysetPaginatedDelete(1);
+	}
+	
+	private static void runOnePartitionedKeysetPaginatedSelect() 
+			throws UnknownHostException, IOException, ProcCallException {
+		int PARTITION_KEY = 19;
+		
+		Object[] args = {PARTITION_KEY, 1};
+		VoltTable.ColumnInfo[] COLS = {
+				new VoltTable.ColumnInfo("PARAM_1", VoltType.INTEGER), 
+				new VoltTable.ColumnInfo("PARAM_2", VoltType.INTEGER)
+		};
+		VoltTable voltTable = new VoltTable(COLS);
+		Object[] values = {0, BATCH_SIZE};
+		voltTable.addRow(values);
+		
+		ArrayList<Object> resultRows = new ArrayList<>();
+		
+		SynchronousIterativeClient client = new SynchronousIterativeClient("localhost", new ContestRowMapper());
+		client.start("PartitionedKeysetPaginatedSelectProc", args, voltTable, resultRows);
+		
+		for(Object row : resultRows) {
+			System.out.println(row);
+		}
+		System.out.println("Returned " + resultRows.size());
+	}
+	
+	private static void runPartitionedKeysetPaginatedDelete(int roundId) 
+			throws UnknownHostException, IOException, ProcCallException, InterruptedException, ExecutionException {
+		int LEAST_KEY_ID = 0;
+		Object[] args = {LEAST_KEY_ID, roundId};
+		AllPartitionParallelClient repetitiveClient = new AllPartitionParallelClient("localhost", 8);
+		repetitiveClient.start("PartitionedIncrementalDeleteProc", args);
+	}
+	
+	private static void runPartitionedKeysetPaginatedSelect() 
+			throws UnknownHostException, IOException, ProcCallException, InterruptedException, ExecutionException {
+		Object[] args = {1, 1};
+		AllPartitionParallelClient repetitiveClient = new AllPartitionParallelClient("localhost", 8);
+		ArrayList<Object> fullResults = repetitiveClient.start("PartitionedKeysetPaginatedSelectProc", args);
+		for(Object row : fullResults) {
+			System.out.println(row);
+		}
+		System.out.println("Returned " + fullResults.size());
 	}
 
 	static int BATCH_SIZE = 5;
 	static int OFFSET = 0;
 
-	private static void runRepetitiveSelect() 
+	/*private static void runRepetitiveSelect() 
 			throws UnknownHostException, IOException, ProcCallException, InterruptedException, ExecutionException {
 		AllPartitionParallelClient repetitiveClient = new AllPartitionParallelClient("localhost", 8);
 		Object[] args = {1};
@@ -50,13 +98,7 @@ public class Application {
 		AllPartitionParallelClient repetitiveClient = new AllPartitionParallelClient("localhost", 8);
 		Object[] args = {1};
 		repetitiveClient.start("LowImpactDeleteProc", args, BATCH_SIZE, OFFSET);
-	}
-
-	private static void runRepetitivePart() throws NoConnectionsException, IOException, ProcCallException {
-		SinglePartSynchronousPaginatedClient partClient = new SinglePartSynchronousPaginatedClient("localhost", 15, null);
-		Object[] args = {2};
-		partClient.start("LowImpactDeleteProc", args, BATCH_SIZE, OFFSET, null);
-	}
+	}*/
 
 	private static void deleteContest() {
 		Object[] params = {1001, 5};
